@@ -61,6 +61,7 @@ jobs:
         echo ENCRYPTION='${{ secrets.DEV_ENCRYPTION }}' >> .env;
         echo VERSION=$(git rev-parse --short HEAD) >> .env;
         echo ENABLE_PROMETHEUS_METRICS_SERVER= >> .env;
+        export DOCKER_TAG=dev;
 
     - name: Enable DEBUG logs
       if: ${{ inputs.debug-logs }}
@@ -79,16 +80,13 @@ jobs:
         user: ${{ secrets.DEV_SSH_USER }}
         ssh-private-key: ${{ secrets.DEV_SSH_KEY }}
 
-    - name: Pull image
+    - name: Pull & Reload
       run: |
-          DOCKER_TAG=dev docker compose pull samowarium || 
-          exit 1
-
-    - name: Reload container
-      run: |
-          DOCKER_TAG=dev docker compose -p samowarium-dev down samowarium && 
-          DOCKER_TAG=dev docker compose -p samowarium-dev up -d samowarium ||
-          exit 1
+          docker compose \
+          -p samowarium-dev \
+          up -d \
+          --pull always \
+          samowarium
 
     - name: Prune images
       run: |
