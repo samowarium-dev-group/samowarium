@@ -86,10 +86,10 @@ jobs:
           echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
           echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
 
-          echo POSTGRES_DB='${{ secrets.POSTGRES_DB }}' >> .env;
-          echo POSTGRES_USER='${{ secrets.POSTGRES_USER }}' >> .env;
+          echo POSTGRES_DB='${{ vars.POSTGRES_DB }}' >> .env;
+          echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
           echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
-          echo POSTGRES_HOST='${{ secrets.POSTGRES_HOST }}' >> .env;
+          echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
 
           export DOCKER_TAG=dev;
       
@@ -109,18 +109,14 @@ jobs:
           host: ${{ secrets.HOST }}
           user: ${{ secrets.SSH_USER }}
           ssh-private-key: ${{ secrets.SSH_KEY }}
-  
-      - name: Pull image
-        run: |
-            DOCKER_TAG=latest docker compose pull samowarium || 
-            exit 1
 
       - name: Pull & Reload
         run: |
             docker compose \
             -p samowarium-dev \
             up -d \
-            --pull always
+            --pull always \
+            || exit 1
 
       - name: Remove configuration files
         run: |
@@ -152,10 +148,10 @@ jobs:
           echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
           echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
 
-          echo POSTGRES_DB='${{ secrets.POSTGRES_DB }}' >> .env;
-          echo POSTGRES_USER='${{ secrets.POSTGRES_USER }}' >> .env;
+          echo POSTGRES_DB='${{ vars.POSTGRES_DB }}' >> .env;
+          echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
           echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
-          echo POSTGRES_HOST='${{ secrets.POSTGRES_HOST }}' >> .env;
+          echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
 
           export DOCKER_TAG=latest;
 
@@ -181,7 +177,8 @@ jobs:
             docker compose \
             -p samowarium-prod \
             up -d \
-            --pull always
+            --pull always \
+            || exit 1
 
       - name: Prune images
         run: |
