@@ -8,6 +8,7 @@ from encryption import Encrypter
 from samoware_api import SamowarePollingContext
 from context import Context
 import util
+import migrations
 
 
 def map_context_to_dict(context: Context) -> dict:
@@ -43,7 +44,13 @@ def map_context_from_dict(d: dict, telegram_id: int) -> Context:
 
 class Database:
     def __init__(self, DB_PATH: str) -> None:
+        log.debug("initializing db...")
         self.path = DB_PATH
+        self.connection = connect(self.path, check_same_thread=False)
+        self.encrypter = Encrypter()
+        util.run_migrations()
+        migrations.run_postgres_migrations()
+        log.info("db has initialized")
 
     def __enter__(self) -> Self:
         self.initialize()
@@ -58,13 +65,6 @@ class Database:
             return True
         except:
             return False
-
-    def initialize(self) -> None:
-        log.debug("initializing db...")
-        self.connection = connect(self.path, check_same_thread=False)
-        self.encrypter = Encrypter()
-        util.run_migrations()
-        log.info("db has initialized")
 
     def close(self) -> None:
         log.debug("trying to close database")
