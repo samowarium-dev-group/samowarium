@@ -90,8 +90,6 @@ jobs:
           echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
           echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
           echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
-
-          export DOCKER_TAG=dev;
       
       - name: Enable DEBUG logs
         if: ${{ inputs.dev-debug-logs }}
@@ -112,6 +110,7 @@ jobs:
 
       - name: Pull & Reload
         run: |
+            DOCKER_TAG=dev \
             docker compose \
             -p samowarium-dev \
             up -d \
@@ -153,8 +152,6 @@ jobs:
           echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
           echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
 
-          export DOCKER_TAG=latest;
-
       - name: Enable DEBUG logs
         if: ${{ inputs.prod-debug-logs }}
         run: |
@@ -174,6 +171,7 @@ jobs:
 
       - name: Pull & Reload
         run: |
+            DOCKER_TAG=latest \
             docker compose \
             -p samowarium-prod \
             up -d \

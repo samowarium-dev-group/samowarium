@@ -71,8 +71,6 @@ jobs:
         echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
         echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
 
-        export DOCKER_TAG=dev;
-
     - name: Enable DEBUG logs
       if: ${{ inputs.debug-logs }}
       run: |
@@ -92,6 +90,7 @@ jobs:
 
     - name: Pull & Reload
       run: |
+          DOCKER_TAG=dev \
           docker compose \
           -p samowarium-dev \
           up -d \
