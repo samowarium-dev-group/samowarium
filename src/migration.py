@@ -30,14 +30,15 @@ def save_data(users):
         host=host,
         port=port,
         user=env.get_postgres_user(),
-        password=env.get_postgres_password()
+        password=env.get_postgres_password(),
     )
     cursor = connection.cursor()
 
-    query = "truncate users; insert into users (telegram_id, samoware_login, samoware_password, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id,samoware_command_id,samoware_rand,last_revalidation,autoread) values \n" + \
-            ",\n".join(
-                f"({(', '.join(str(x) for x in user))})" for user in users
-            ) + ";"
+    query = (
+        "truncate users; insert into users (telegram_id, samoware_login, samoware_password, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id,samoware_command_id,samoware_rand,last_revalidation,autoread) values \n"
+        + ",\n".join(f"({(', '.join(str(x) for x in user))})" for user in users)
+        + ";"
+    )
     print(query)
 
     cursor.execute(query)
@@ -48,7 +49,7 @@ def map_user(user):
     d = json.loads(user[1])
 
     def wrapped(x):
-        return "\'" + x + "\'"
+        return "'" + x + "'"
 
     telegram_id = wrapped(str(user[0]))
 
@@ -81,9 +82,11 @@ def map_user(user):
 
 def load_data():
     connection = sqlite3.connect("./db/database.db", check_same_thread=False)
-    users = connection.execute("""
+    users = connection.execute(
+        """
         select * from clients;
-    """).fetchall()
+    """
+    ).fetchall()
 
     return [map_user(user) for user in users]
 
