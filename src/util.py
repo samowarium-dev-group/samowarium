@@ -1,6 +1,6 @@
 from http.client import HTTPResponse
 import os
-import subprocess
+# import subprocess
 from typing import Awaitable, Callable, Optional
 import logging as log
 
@@ -15,6 +15,6 @@ def make_dir_if_not_exist(path):
         os.makedirs(path)
 
 
-def run_migrations():
-    log.debug("running migrations...")
-    subprocess.run(["yoyo", "apply", "-b"])
+# def run_migrations():
+#     log.debug("running migrations...")
+#     subprocess.run(["yoyo", "apply", "-b"])

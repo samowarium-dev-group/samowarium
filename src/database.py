@@ -7,7 +7,7 @@ import dateutil.parser
 from encryption import Encrypter
 from samoware_api import SamowarePollingContext
 from context import Context
-import util
+# import util
 import migrations
 
 
@@ -48,8 +48,8 @@ class Database:
         self.path = DB_PATH
         self.connection = connect(self.path, check_same_thread=False)
         self.encrypter = Encrypter()
-        util.run_migrations()
-        migrations.run_postgres_migrations()
+        # util.run_migrations()
+        migrations.apply()
         log.info("db has initialized")
 
     def __enter__(self) -> Self:

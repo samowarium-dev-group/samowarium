@@ -10,7 +10,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY ./migrations ./migrations
-COPY ./migrations-pg ./migrations-pg
 COPY ./src .
 
 # port for prometheus metric server
