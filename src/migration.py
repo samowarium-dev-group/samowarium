@@ -34,6 +34,10 @@ def save_data(users):
     )
     cursor = connection.cursor()
 
+    if len(users) == 0:
+        print("no users to migrate")
+        return
+
     query = (
         "truncate users; insert into users (telegram_id, samoware_login, samoware_password, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id,samoware_command_id,samoware_rand,last_revalidation,autoread) values \n"
         + ",\n".join(f"({(', '.join(str(x) for x in user))})" for user in users)
@@ -54,7 +58,10 @@ def map_user(user):
     telegram_id = wrapped(str(user[0]))
 
     samoware_login = wrapped(d["login"])
-    samoware_password = wrapped("\\x" + user[2].hex()) + "::bytea"
+    if user[2] is not None:
+        samoware_password = wrapped("\\x" + user[2].hex()) + "::bytea"
+    else:
+        samoware_password = "null"
     samoware_cookies = wrapped(d["cookies"])
     samoware_session = wrapped(d["session"])
     samoware_ack_seq = d["ack_seq"]
