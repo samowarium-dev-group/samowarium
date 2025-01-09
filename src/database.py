@@ -116,9 +116,9 @@ class Database:
         async with self.pool.connection() as conn:
             row = await (
                 await conn.execute(
-                    "SELECT samoware_login, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id, samoware_command_id, samoware_rand, last_revalidation \
-                 FROM users \
-                 WHERE telegram_id=%s",
+                "SELECT samoware_login, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id, samoware_command_id, samoware_rand, last_revalidation \
+                FROM users \
+                WHERE telegram_id=%s",
                     (telegram_id,),
                 )
             ).fetchone()

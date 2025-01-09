@@ -89,7 +89,7 @@ async def main() -> None:
     if env.is_prometheus_metrics_server_enabled():
         port = env.get_prometheus_metrics_server_port()
         logging.info(f"starting the metrics server on {port} port...")
-        start_http_server(int(port))
+        start_http_server(port)
     logging.info("starting the application...")
     app = Application()
     await app.start()

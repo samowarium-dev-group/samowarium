@@ -31,7 +31,7 @@ def get_encryption_key() -> str | None:
 
 
 def get_prometheus_metrics_server_port() -> int:
-    return get_var_or_default("PROMETHEUS_METRICS_SERVER_PORT", 53000)
+    return int(get_var_or_default("PROMETHEUS_METRICS_SERVER_PORT", 53000))
 
 
 def get_postgres_db() -> str:
@@ -51,7 +51,7 @@ def get_postgres_host() -> str:
 
 
 def get_postgres_connections_count() -> str:
-    return get_var_or_default("POSTGRES_CONNECTIONS_COUNT", 4)
+    return int(get_var_or_default("POSTGRES_CONNECTIONS_COUNT", 4))
 
 
 def get_postgres_connection_string() -> str:
