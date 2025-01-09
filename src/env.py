@@ -50,6 +50,19 @@ def get_postgres_host() -> str:
     return get_var_or_throw("POSTGRES_HOST")
 
 
+def get_postgres_connections_count() -> str:
+    return get_var_or_default("POSTGRES_CONNECTIONS_COUNT", 4)
+
+
+def get_postgres_connection_string() -> str:
+    return "postgresql://{}:{}@{}/{}".format(
+        get_postgres_user(),
+        get_postgres_password(),
+        get_postgres_host(),
+        get_postgres_db()
+    )
+
+
 def is_ip_check_enabled() -> bool:
     return get_var_or_default("IP_CHECK", None) is not None
 

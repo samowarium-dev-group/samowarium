@@ -79,9 +79,10 @@ jobs:
   
       - name: Prepare configuration
         run: |
+          mv .env.dev .env;
           echo ENV=DEV >> .env;
           echo ENABLE_PROMETHEUS_METRICS_SERVER=1 >> .env;
-          echo VERSION=${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
+          echo VERSION=v${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
 
           echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
           echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
@@ -140,9 +141,10 @@ jobs:
 
       - name: Prepare configuration
         run: |
+          mv .env.prod .env;
           echo ENV=PROD >> .env;
           echo ENABLE_PROMETHEUS_METRICS_SERVER=1 >> .env;
-          echo VERSION=${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
+          echo VERSION=v${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
 
           echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
           echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;

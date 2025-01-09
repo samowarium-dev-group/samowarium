@@ -9,4 +9,6 @@ pycryptodome==3.20.0
 setuptools==74.1.2
 prometheus-client==0.16.0
 prometheus-summary==0.1.2
+psycopg==3.2.3
+psycopg-pool==3.2.4
 psycopg2==2.9.10

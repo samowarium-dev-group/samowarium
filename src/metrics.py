@@ -2,8 +2,8 @@ from prometheus_client import Gauge, Counter
 
 GATHER_METRIC_DELAY_SEC = 3 * 60  # 3 min
 
-clients_amount_metric = Gauge(
-    "clients_amount", "Users", labelnames=["pswd", "autoread"]
+users_amount_metric = Gauge(
+    "users_amount", "Users", labelnames=["pswd", "autoread"]
 )
 
 # Logging
@@ -30,7 +30,7 @@ revalidation_metric = Counter(
 )
 logout_metric = Counter("logout", "Logout events metric")
 forced_logout_metric = Counter("forced_logout", "Forced logout events metric")
-client_handler_error_metric = Counter(
-    "client_handler_error", "Client handler error events metric", labelnames=["type"]
+user_handler_error_metric = Counter(
+    "user_handler_error", "Client handler error events metric", labelnames=["type"]
 )
 incoming_letter_metric = Counter("incoming_letter", "Incoming letter events metric")
