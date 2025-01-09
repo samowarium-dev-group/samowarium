@@ -2,6 +2,8 @@ name: Deploy to production stand
 
 concurrency: deploy
 
+permissions: read-all
+
 on:
   workflow_dispatch:
     inputs:
