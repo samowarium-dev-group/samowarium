@@ -2,9 +2,7 @@ from prometheus_client import Gauge, Counter
 
 GATHER_METRIC_DELAY_SEC = 3 * 60  # 3 min
 
-users_amount_metric = Gauge(
-    "users_amount", "Users", labelnames=["pswd", "autoread"]
-)
+users_amount_metric = Gauge("users_amount", "Users", labelnames=["pswd", "autoread"])
 
 # Logging
 log_metric = Counter("log_info", "Logs metric", labelnames=["level"])

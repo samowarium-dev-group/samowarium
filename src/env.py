@@ -59,7 +59,7 @@ def get_postgres_connection_string() -> str:
         get_postgres_user(),
         get_postgres_password(),
         get_postgres_host(),
-        get_postgres_db()
+        get_postgres_db(),
     )
 
 

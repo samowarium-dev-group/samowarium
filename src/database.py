@@ -34,7 +34,7 @@ def make_connection_pool() -> AsyncConnectionPool:
         connection_string,
         min_size=connections_count,
         max_size=connections_count,
-        open=False
+        open=False,
     )
 
 
@@ -65,7 +65,19 @@ class Database:
                 "INSERT INTO users \
                  (telegram_id, samoware_login, samoware_password, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id, samoware_command_id, samoware_rand, last_revalidation, autoread) VALUES \
                  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (telegram_id, ctx.samoware_login, None, pctx.cookies.output(header=""), pctx.session, pctx.ack_seq, pctx.request_id, pctx.command_id, pctx.rand, ctx.last_revalidation, False)
+                (
+                    telegram_id,
+                    ctx.samoware_login,
+                    None,
+                    pctx.cookies.output(header=""),
+                    pctx.session,
+                    pctx.ack_seq,
+                    pctx.request_id,
+                    pctx.command_id,
+                    pctx.rand,
+                    ctx.last_revalidation,
+                    False,
+                ),
             )
             await conn.commit()
             log.debug(f"user {telegram_id} has inserted")
@@ -74,7 +86,7 @@ class Database:
         async with self.pool.connection() as conn:
             await conn.execute(
                 "UPDATE users SET samoware_password=%s WHERE telegram_id=%s",
-                (self.encrypter.encrypt(password), telegram_id)
+                (self.encrypter.encrypt(password), telegram_id),
             )
             await conn.commit()
             log.debug(f"set password for the user {telegram_id}")
@@ -86,19 +98,30 @@ class Database:
                 "UPDATE users \
                  SET samoware_cookies=%s, samoware_session=%s, samoware_ack_seq=%s, samoware_request_id=%s, samoware_command_id=%s, samoware_rand=%s, last_revalidation=%s \
                  WHERE telegram_id=%s",
-                (pctx.cookies.output(header=""), pctx.session, pctx.ack_seq, pctx.request_id, pctx.command_id, pctx.rand, ctx.last_revalidation, ctx.telegram_id),
+                (
+                    pctx.cookies.output(header=""),
+                    pctx.session,
+                    pctx.ack_seq,
+                    pctx.request_id,
+                    pctx.command_id,
+                    pctx.rand,
+                    ctx.last_revalidation,
+                    ctx.telegram_id,
+                ),
             )
             await conn.commit()
             log.debug(f"samoware context for the user {ctx.telegram_id} has inserted")
 
     async def get_samoware_context(self, telegram_id: int) -> Context | None:
         async with self.pool.connection() as conn:
-            row = await (await conn.execute(
-                "SELECT samoware_login, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id, samoware_command_id, samoware_rand, last_revalidation \
+            row = await (
+                await conn.execute(
+                    "SELECT samoware_login, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id, samoware_command_id, samoware_rand, last_revalidation \
                  FROM users \
                  WHERE telegram_id=%s",
-                (telegram_id,),
-            )).fetchone()
+                    (telegram_id,),
+                )
+            ).fetchone()
             await conn.commit()
             if row is None:
                 log.warning(
@@ -110,9 +133,12 @@ class Database:
 
     async def get_password(self, telegram_id: int) -> str | None:
         async with self.pool.connection() as conn:
-            row = await (await conn.execute(
-                "SELECT samoware_password FROM users WHERE telegram_id=%s", (telegram_id,)
-            )).fetchone()
+            row = await (
+                await conn.execute(
+                    "SELECT samoware_password FROM users WHERE telegram_id=%s",
+                    (telegram_id,),
+                )
+            ).fetchone()
             await conn.commit()
             log.debug(f"requested password for the user {telegram_id}")
             return (
@@ -124,30 +150,31 @@ class Database:
     async def is_user_active(self, telegram_id: int) -> bool:
         async with self.pool.connection() as conn:
             is_active = (
-                (await (await conn.execute(
-                    "SELECT COUNT(*) FROM users WHERE telegram_id = %s", (int(telegram_id),)
-                )).fetchone())[0]
-                != 0
-            )
+                await (
+                    await conn.execute(
+                        "SELECT COUNT(*) FROM users WHERE telegram_id = %s",
+                        (int(telegram_id),),
+                    )
+                ).fetchone()
+            )[0] != 0
             await conn.commit()
             log.debug(f"user {telegram_id} is active: {is_active}")
             return is_active
 
     async def get_all_users(self) -> list[Context]:
         def mapper(row):
-            return make_context(
-                telegram_id=row[0],
-                row=row[1:]
-            )
+            return make_context(telegram_id=row[0], row=row[1:])
 
         async with self.pool.connection() as conn:
             users = list(
                 map(
                     mapper,
-                    await (await conn.execute(
-                        "SELECT telegram_id, samoware_login, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id, samoware_command_id, samoware_rand, last_revalidation \
+                    await (
+                        await conn.execute(
+                            "SELECT telegram_id, samoware_login, samoware_cookies, samoware_session, samoware_ack_seq, samoware_request_id, samoware_command_id, samoware_rand, last_revalidation \
                          FROM users"
-                    )).fetchall(),
+                        )
+                    ).fetchall(),
                 )
             )
             await conn.commit()
@@ -168,9 +195,11 @@ class Database:
             users = list(
                 map(
                     mapper,
-                    await (await conn.execute(
-                        "SELECT samoware_password, autoread FROM users"
-                    )).fetchall(),
+                    await (
+                        await conn.execute(
+                            "SELECT samoware_password, autoread FROM users"
+                        )
+                    ).fetchall(),
                 )
             )
             await conn.commit()
@@ -181,9 +210,7 @@ class Database:
 
     async def remove_user(self, telegram_id: int) -> None:
         async with self.pool.connection() as conn:
-            await conn.execute(
-                "DELETE FROM users WHERE telegram_id=%s", (telegram_id,)
-            )
+            await conn.execute("DELETE FROM users WHERE telegram_id=%s", (telegram_id,))
             await conn.commit()
             log.debug(f"user {telegram_id} was removed")
 
@@ -201,9 +228,14 @@ class Database:
 
     async def get_autoread(self, telegram_id: int) -> bool:
         async with self.pool.connection() as conn:
-            enabled = (await (await conn.execute(
-                "SELECT autoread FROM users WHERE telegram_id=%s", (telegram_id,)
-            )).fetchone())[0]
+            enabled = (
+                await (
+                    await conn.execute(
+                        "SELECT autoread FROM users WHERE telegram_id=%s",
+                        (telegram_id,),
+                    )
+                ).fetchone()
+            )[0]
             await conn.commit()
             log.debug(f"autoread for {telegram_id} is set to {enabled}")
             return enabled

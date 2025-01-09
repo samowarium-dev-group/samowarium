@@ -68,9 +68,7 @@ class UserHandler:
                 telegram_id, HANDLER_IS_ALREADY_WORKED_PROMPT, MARKDOWN_FORMAT
             )
             return None
-        handler = UserHandler(
-            message_sender, db, Context(telegram_id, samoware_login)
-        )
+        handler = UserHandler(message_sender, db, Context(telegram_id, samoware_login))
         is_successful_login = await handler.login(samoware_password)
         login_metric.labels(is_successful=is_successful_login).inc()
         if not is_successful_login:
@@ -147,7 +145,9 @@ class UserHandler:
                 except UnauthorizedError as error:
                     user_handler_error_metric.labels(type=type(error).__name__).inc()
                     log.info(f"session for {self.context.samoware_login} expired")
-                    samoware_password = await self.db.get_password(self.context.telegram_id)
+                    samoware_password = await self.db.get_password(
+                        self.context.telegram_id
+                    )
                     if samoware_password is None:
                         await self.session_has_expired()
                         await self.db.remove_user(self.context.telegram_id)
