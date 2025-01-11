@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQuer
 import logging as log
 from typing import Optional
 import asyncio
-from client_handler import ClientHandler
+from client_handler import UserHandler
 from const import MARKDOWN_FORMAT, TELEGRAM_SEND_RETRY_DELAY_SEC
 from database import Database
 import env
@@ -25,8 +25,8 @@ Samowarium - бот, который пересылает входящие пис
 Если пользователь выбрал опцию "не сохранять пароль", то бот его забывает после получения сессии почтового сервера. В ином случае бот запоминает пароль пользователя.
 Токен сессии почтового сервера возможно использовать только для работы с почтой, бот не может с помощью него получить доступ к остальным сервисам МГТУ.
 
-Как храняться пароли?
-Пароли пользователей храняться в защищенной базе данных.
+Как хранятся пароли?
+Пароли пользователей хранятся в защищенной базе данных.
 Каждый пароль хранится в базе данных в зашифрованном виде и расшифровывается только при необходимости пройти реавторизацию. Шифрование осуществляется алгоритмом AES256.
 
 Зачем хранить пароли?
@@ -47,7 +47,7 @@ SAVE_PASSWORD_PROMPT = (
 PASSWORD_SAVED_PROMPT = "Пароль сохранен."
 
 AUTOREAD_PROMPT = (
-    "Автоматически отмечать приходящие письма прочитанными? Включено по умолчанию."
+    "Автоматически отмечать приходящие письма прочитанными? Выключено по умолчанию."
 )
 AUTOREAD_ON_PROMPT = "Письма будут отмечаться прочитанными автоматически."
 AUTOREAD_OFF_PROMPT = "Письма не будут отмечаться прочитанными."
@@ -72,7 +72,7 @@ class TelegramBot:
             ("login", self.login_command),
             ("about", self.about_command),
         ]
-        self.handlers: dict[int, ClientHandler] = {}
+        self.handlers: dict[int, UserHandler] = {}
 
     async def callback_query_handler(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -81,7 +81,7 @@ class TelegramBot:
         command = data[0]
         if command == SAVE_PSW_CALLBACK:
             password = data[1]
-            self.db.set_password(update.effective_user.id, password)
+            await self.db.set_password(update.effective_user.id, password)
             await self.send_message(
                 update.effective_user.id, PASSWORD_SAVED_PROMPT, MARKDOWN_FORMAT
             )
@@ -89,13 +89,13 @@ class TelegramBot:
         elif command == NO_SAVE_PSW_CALLBACK:
             log.info(f"password for user {update.effective_user.id} is not saved")
         elif command == AUTOREAD_ON_CALLBACK:
-            self.db.set_autoread(update.effective_user.id, True)
+            await self.db.set_autoread(update.effective_user.id, True)
             await self.send_message(
                 update.effective_user.id, AUTOREAD_ON_PROMPT, MARKDOWN_FORMAT
             )
             log.info(f"autoread for user {update.effective_user.id} is enabled")
         elif command == AUTOREAD_OFF_CALLBACK:
-            self.db.set_autoread(update.effective_user.id, False)
+            await self.db.set_autoread(update.effective_user.id, False)
             await self.send_message(
                 update.effective_user.id, AUTOREAD_OFF_PROMPT, MARKDOWN_FORMAT
             )
@@ -107,12 +107,12 @@ class TelegramBot:
     async def start_bot(self) -> None:
         log.info("starting the bot...")
         log.info("loading handlers...")
-        for telegram_id, context in self.db.get_all_clients():
-            handler = await ClientHandler.make_from_context(
+        for context in await self.db.get_all_users():
+            handler = await UserHandler.make_from_context(
                 context, self.send_message, self.db
             )
             await handler.start_handling()
-            self.handlers[telegram_id] = handler
+            self.handlers[context.telegram_id] = handler
         log.info("handlers are loaded")
 
         log.info("connecting to telegram api...")
@@ -152,7 +152,7 @@ class TelegramBot:
         log.debug(f"received /stop from {update.effective_user.id}")
         telegram_id = update.effective_user.id
         await self.handlers[telegram_id].stop_handling()
-        self.db.remove_client(
+        await self.db.remove_user(
             telegram_id
         )  # TODO: не удалять запись, а удалять только контекст и пароль
         metrics.incoming_commands_metric.labels(command_name="stop").inc()
@@ -165,7 +165,7 @@ class TelegramBot:
         metrics.incoming_commands_metric.labels(command_name="login").inc()
         if context.args is None or len(context.args) != 2:
             log.debug(
-                f"client {update.effective_user.id} entered login and password in wrong format"
+                f"user {update.effective_user.id} entered login and password in wrong format"
             )
             await update.message.reply_html(LOGIN_WRONG_FORMAT_PROMPT)
             return
@@ -173,8 +173,8 @@ class TelegramBot:
         telegram_id = update.effective_user.id
         samoware_login = context.args[0]
         samoware_password = context.args[1]
-        log.debug(f'client entered login "{samoware_login}" and password')
-        new_handler = await ClientHandler.make_new(
+        log.debug(f'user entered login "{samoware_login}" and password')
+        new_handler = await UserHandler.make_new(
             telegram_id, samoware_login, samoware_password, self.send_message, self.db
         )
         if new_handler is not None:

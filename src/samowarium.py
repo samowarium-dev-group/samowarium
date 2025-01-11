@@ -8,31 +8,32 @@ import asyncio
 import logging
 import signal
 
-from metrics import GATHER_METRIC_DELAY_SEC, clients_amount_metric, log_metric
-from const import DB_FOLDER_PATH, DB_PATH, LOGGER_FOLDER_PATH, LOGGER_PATH
+from metrics import GATHER_METRIC_DELAY_SEC, users_amount_metric, log_metric
+from const import LOGGER_FOLDER_PATH, LOGGER_PATH
 from database import Database
+from encryption import Encrypter
 import env
 import util
 
 
 class Application:
     async def start(self) -> None:
-        self.db = Database(DB_PATH)
-        self.db.initialize()
+        self.encrypter = Encrypter()
+        self.db = Database(self.encrypter)
+        await self.db.open()
         self.bot = TelegramBot(self.db)
         await self.bot.start_bot()
         self.gathering_metric_task = asyncio.create_task(
-            self.gather_clients_amount_metric()
+            self.gather_users_amount_metric()
         )
         self.setupShutdown(asyncio.get_event_loop())
 
     def setupShutdown(self, event_loop: asyncio.AbstractEventLoop):
         async def shutdown(signal) -> None:
             logging.info(f"received exit signal {signal}")
-            logging.info("closing db connection")
-            self.db.close()
             self.gathering_metric_task.cancel()
             await self.bot.stop_bot()
+            await self.db.close()
             logging.info("application has stopped successfully")
 
         for s in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT):
@@ -40,18 +41,18 @@ class Application:
                 s, lambda s=s: asyncio.create_task(shutdown(s))
             )
 
-    async def gather_clients_amount_metric(self):
+    async def gather_users_amount_metric(self):
         try:
             while self.db.is_open():
-                clients = self.db.get_all_clients_stat()
+                users = await self.db.get_all_users_stat()
                 for pswd, autoread in (
                     (x, y) for x in (True, False) for y in (True, False)
                 ):
-                    clients_amount_metric.labels(pswd=pswd, autoread=autoread).set(
+                    users_amount_metric.labels(pswd=pswd, autoread=autoread).set(
                         len(
                             list(
                                 filter(
-                                    lambda x: x[2] == pswd and x[3] == autoread, clients
+                                    lambda x: x[0] == pswd and x[1] == autoread, users
                                 )
                             )
                         )
@@ -85,7 +86,6 @@ def setup_logger():
 
 async def main() -> None:
     setup_logger()
-    util.make_dir_if_not_exist(DB_FOLDER_PATH)
     if env.is_prometheus_metrics_server_enabled():
         port = env.get_prometheus_metrics_server_port()
         logging.info(f"starting the metrics server on {port} port...")

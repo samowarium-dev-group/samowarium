@@ -10,10 +10,6 @@ TELEGRAM_SEND_RETRY_DELAY_SEC = 2
 HTML_FORMAT = "html"
 MARKDOWN_FORMAT = "markdown"
 
-# db
-DB_FOLDER_PATH = "db"
-DB_PATH = f"{DB_FOLDER_PATH}/database.db"
-
 # logs
 LOGGER_FOLDER_PATH = "logs"
 LOGGER_PATH = f"{LOGGER_FOLDER_PATH}/samowarium.log"

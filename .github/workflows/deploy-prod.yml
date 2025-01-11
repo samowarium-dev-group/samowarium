@@ -1,11 +1,10 @@
 name: Deploy to production stand
 
+concurrency: deploy
+
 on:
   workflow_dispatch:
     inputs:
-      commit:
-        description: 'Сheckout specific commit'
-        required: false
       deploy-dev:
         description: 'Deploy to dev stand firstly'
         type: boolean
@@ -39,10 +38,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-   
-    - name: Checkout specific commit
-      if: ${{ inputs.commit != '' }}
-      run:	git checkout ${{ inputs.commit }}
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -65,23 +60,26 @@ jobs:
   deploy-to-dev:
     needs: build-and-push-image
     runs-on: ubuntu-latest
+    environment: dev
     if: ${{ inputs.deploy-dev }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
   
-      - name: Checkout specific commit
-        if: ${{ inputs.commit != '' }}
-        run:	git checkout ${{ inputs.commit }}
-  
       - name: Prepare configuration
         run: |
+          mv .env.dev .env;
           echo ENV=DEV >> .env;
-          echo TELEGRAM_TOKEN=${{ secrets.DEV_TG_TOKEN }} >> .env;
-          echo ENCRYPTION='${{ secrets.DEV_ENCRYPTION }}' >> .env;
-          echo VERSION=$(git rev-parse --short HEAD) >> .env;
-          echo ENABLE_PROMETHEUS_METRICS_SERVER= >> .env;
-          export DOCKER_TAG=dev;
+          echo ENABLE_PROMETHEUS_METRICS_SERVER=1 >> .env;
+          echo VERSION=v${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
+
+          echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
+          echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
+
+          echo POSTGRES_DB='${{ vars.POSTGRES_DB }}' >> .env;
+          echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
+          echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
+          echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
       
       - name: Enable DEBUG logs
         if: ${{ inputs.dev-debug-logs }}
@@ -96,22 +94,18 @@ jobs:
       - name: Configure Docker Host
         uses: khaledez/configure-docker-host@v2
         with:
-          host: ${{ secrets.DEV_HOST }}
-          user: ${{ secrets.DEV_SSH_USER }}
-          ssh-private-key: ${{ secrets.DEV_SSH_KEY }}
-  
-      - name: Pull image
-        run: |
-            DOCKER_TAG=latest docker compose pull samowarium || 
-            exit 1
+          host: ${{ secrets.HOST }}
+          user: ${{ secrets.SSH_USER }}
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Pull & Reload
         run: |
+            DOCKER_TAG=dev \
             docker compose \
             -p samowarium-dev \
             up -d \
             --pull always \
-            samowarium
+            || exit 1
 
       - name: Remove configuration files
         run: |
@@ -125,22 +119,25 @@ jobs:
       ( needs.deploy-to-dev.result == 'success' ||
         needs.deploy-to-dev.result == 'skipped' )
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout specific commit
-        if: ${{ inputs.commit != '' }}
-        run:	git checkout ${{ inputs.commit }}
-
       - name: Prepare configuration
         run: |
+          mv .env.prod .env;
           echo ENV=PROD >> .env;
-          echo TELEGRAM_TOKEN=${{ secrets.PROD_TG_TOKEN }} >> .env;
-          echo ENCRYPTION='${{ secrets.PROD_ENCRYPTION }}' >> .env;
-          echo VERSION=$(git rev-parse --short HEAD) >> .env;
-          echo ENABLE_PROMETHEUS_METRICS_SERVER= >> .env;
-          export DOCKER_TAG=latest;
+          echo ENABLE_PROMETHEUS_METRICS_SERVER=1 >> .env;
+          echo VERSION=v${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
+
+          echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
+          echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
+
+          echo POSTGRES_DB='${{ vars.POSTGRES_DB }}' >> .env;
+          echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
+          echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
+          echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
 
       - name: Enable DEBUG logs
         if: ${{ inputs.prod-debug-logs }}
@@ -155,17 +152,18 @@ jobs:
       - name: Configure Docker Host
         uses: khaledez/configure-docker-host@v2
         with:
-          host: ${{ secrets.PROD_HOST }}
-          user: ${{ secrets.PROD_SSH_USER }}
-          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+          host: ${{ secrets.HOST }}
+          user: ${{ secrets.SSH_USER }}
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Pull & Reload
         run: |
+            DOCKER_TAG=latest \
             docker compose \
             -p samowarium-prod \
             up -d \
             --pull always \
-            samowarium
+            || exit 1
 
       - name: Prune images
         run: |

@@ -1,58 +1,83 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv(".env")
+load_dotenv(".env", override=True)
 
-PROFILE_VAR_NAME = "ENV"
-VERSION_VAR_NAME = "VERSION"
-TG_TOKEN_VAR_NAME = "TELEGRAM_TOKEN"
-DEBUG_VAR_NAME = "DEBUG"
-ENCRYPTION_KEY_VAR_NAME = "ENCRYPTION"
-IP_CHECK_VAR_NAME = "IP_CHECK"
-ENABLE_PROMETHEUS_METRICS_SERVER_VAR_NAME = "ENABLE_PROMETHEUS_METRICS_SERVER"
-PROMETHEUS_METRICS_SERVER_PORT_VAR_NAME = "PROMETHEUS_METRICS_SERVER_PORT"
 
-DEV_PROFILE_NAME = "DEV"
-PROD_PROFILE_NAME = "PROD"
+def get_var_or_throw(var_name) -> str:
+    if var_name not in os.environ:
+        raise EnvironmentError(f"{var_name} env var does not exist")
+    return os.environ.get(var_name)
+
+
+def get_var_or_default(var_name: str, default: any) -> any:
+    return os.environ.get(var_name, default=default)
 
 
 def get_profile() -> str:
-    return os.environ.get(PROFILE_VAR_NAME, default="unknown")
+    return get_var_or_default("ENV", "unknown")
 
 
 def get_version() -> str:
-    return os.environ.get(VERSION_VAR_NAME, default="none")
+    return get_var_or_default("VERSION", "none")
 
 
 def get_telegram_token() -> str:
-    if TG_TOKEN_VAR_NAME not in os.environ:
-        raise EnvironmentError(f"{TG_TOKEN_VAR_NAME} env var does not exist")
-    return os.environ.get(TG_TOKEN_VAR_NAME)
+    return get_var_or_throw("TELEGRAM_TOKEN")
 
 
 def get_encryption_key() -> str | None:
-    return os.environ.get(ENCRYPTION_KEY_VAR_NAME, default=None)
+    return get_var_or_default("ENCRYPTION", None)
 
 
 def get_prometheus_metrics_server_port() -> int:
-    return os.environ.get(PROMETHEUS_METRICS_SERVER_PORT_VAR_NAME, default=53000)
+    return int(get_var_or_default("PROMETHEUS_METRICS_SERVER_PORT", 53000))
+
+
+def get_postgres_db() -> str:
+    return get_var_or_throw("POSTGRES_DB")
+
+
+def get_postgres_user() -> str:
+    return get_var_or_throw("POSTGRES_USER")
+
+
+def get_postgres_password() -> str:
+    return get_var_or_throw("POSTGRES_PASSWORD")
+
+
+def get_postgres_host() -> str:
+    return get_var_or_throw("POSTGRES_HOST")
+
+
+def get_postgres_connections_count() -> str:
+    return int(get_var_or_default("POSTGRES_CONNECTIONS_COUNT", 4))
+
+
+def get_postgres_connection_string() -> str:
+    return "postgresql://{}:{}@{}/{}".format(
+        get_postgres_user(),
+        get_postgres_password(),
+        get_postgres_host(),
+        get_postgres_db(),
+    )
 
 
 def is_ip_check_enabled() -> bool:
-    return os.environ.get(IP_CHECK_VAR_NAME) is not None
+    return get_var_or_default("IP_CHECK", None) is not None
 
 
 def is_dev_profile() -> bool:
-    return get_profile() == DEV_PROFILE_NAME
+    return get_profile() == "DEV"
 
 
 def is_prod_profile() -> bool:
-    return get_profile() == PROD_PROFILE_NAME
+    return get_profile() == "PROD"
 
 
 def is_debug() -> bool:
-    return os.environ.get(DEBUG_VAR_NAME) is not None
+    return get_var_or_default("DEBUG", None) is not None
 
 
 def is_prometheus_metrics_server_enabled() -> bool:
-    return os.environ.get(ENABLE_PROMETHEUS_METRICS_SERVER_VAR_NAME) is not None
+    return get_var_or_default("ENABLE_PROMETHEUS_METRICS_SERVER", None) is not None
