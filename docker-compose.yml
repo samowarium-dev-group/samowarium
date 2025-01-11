@@ -6,7 +6,6 @@ services:
     env_file:
       - .env
     volumes:
-      - db:/samowarium/db:rw
       - logs:/samowarium/logs:rw
     entrypoint:
       - python3
@@ -17,7 +16,7 @@ services:
       - "53000:53000"
     depends_on:
       - postgres
-  
+
   postgres:
     image: postgres:12.22
     env_file:
@@ -35,6 +34,5 @@ services:
       start_period: 30s
 
 volumes:
-  db:
   logs:
   postgres-data:
