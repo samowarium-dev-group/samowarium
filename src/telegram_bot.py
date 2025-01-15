@@ -235,7 +235,7 @@ class TelegramBot:
         metrics.incoming_commands_metric.labels(command_name="about").inc()
         await update.message.reply_markdown(
             ABOUT_PROMPT.format(env.get_profile(), env.get_version()),
-            disable_web_page_preview=True
+            disable_web_page_preview=True,
         )
 
     async def send_message(
