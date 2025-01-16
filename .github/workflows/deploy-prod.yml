@@ -80,6 +80,7 @@ jobs:
           echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
           echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
           echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
+          echo "do some crime";
       
       - name: Enable DEBUG logs
         if: ${{ inputs.dev-debug-logs }}
