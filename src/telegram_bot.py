@@ -246,7 +246,7 @@ class TelegramBot:
         attachments: Optional[list[tuple[bytes, str]]] = None,
     ) -> None:
         is_sent = False
-        log.debug(f'sending a message to {telegram_id} ...')
+        log.debug(f"sending a message to {telegram_id} ...")
         metrics.sent_message_metric.inc()
         while not is_sent:
             try:
