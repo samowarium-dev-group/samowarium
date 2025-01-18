@@ -5,6 +5,9 @@ concurrency: deploy-dev
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     uses: ./.github/workflows/build-and-push.yml

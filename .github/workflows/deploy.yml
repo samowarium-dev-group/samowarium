@@ -45,7 +45,7 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Enable DEBUG logs
-        if: ${{ vars.IS_DEBUG_ENABLED }} == 'true'
+        if: vars.IS_DEBUG_ENABLED == 'true'
         run: |
             echo DEBUG=1 >> .env;
 
