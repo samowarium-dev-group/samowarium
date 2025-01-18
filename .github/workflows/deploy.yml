@@ -10,11 +10,9 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-
 jobs:
   deploy:
+    name: Deploy to ${{ inputs.environment }} stand
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     steps:

@@ -7,11 +7,9 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-
 jobs:
   build-and-push-image:
+    name: Build and push image tag ${{ inputs.tag }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
