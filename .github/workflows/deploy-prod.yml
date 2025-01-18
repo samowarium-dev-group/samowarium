@@ -1,174 +1,27 @@
 name: Deploy to production stand
 
-concurrency: deploy
+concurrency: deploy-prod
 
 on:
   workflow_dispatch:
     inputs:
-      deploy-dev:
-        description: 'Deploy to dev stand firstly'
-        type: boolean
-        default: true
       production-check:
         description: 'DEPLOY TO PRODUCTION'
         type: boolean
         default: false
         required: true
-      dev-debug-logs:
-        description: 'Enable DEBUG level logs on dev stand'
-        type: boolean
-        default: false
-      prod-debug-logs:
-        description: 'Enable DEBUG level logs on prod stand'
-        type: boolean
-        default: false
-      dev-ip-check:
-        description: 'Enable IP check on dev stand'
-        type: boolean
-        default: true
-      prod-ip-check:
-        description: 'Enable IP check on prod stand'
-        type: boolean
-        default: true
 
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu-latest
+  build-and-push:
     if: ${{ inputs.production-check }}
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      tag: latest
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
-    # - name: Cache image
-    #   uses: satackey/action-docker-layer-caching@v0.0.11
-    #   continue-on-error: true
-
-    - name: Build and push image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: |
-          vzalygin/samowarium:latest
-
-  deploy-to-dev:
-    needs: build-and-push-image
-    runs-on: ubuntu-latest
-    environment: dev
-    if: ${{ inputs.deploy-dev }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-  
-      - name: Prepare configuration
-        run: |
-          mv .env.dev .env;
-          echo ENV=DEV >> .env;
-          echo ENABLE_PROMETHEUS_METRICS_SERVER=1 >> .env;
-          echo VERSION=v${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
-
-          echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
-          echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
-
-          echo POSTGRES_DB='${{ vars.POSTGRES_DB }}' >> .env;
-          echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
-          echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
-          echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
-      
-      - name: Enable DEBUG logs
-        if: ${{ inputs.dev-debug-logs }}
-        run: |
-          echo DEBUG= >> .env;
-
-      - name: Enable DEBUG IP check
-        if: ${{ inputs.dev-ip-check }}
-        run: |
-          echo IP_CHECK= >> .env;
-  
-      - name: Configure Docker Host
-        uses: khaledez/configure-docker-host@v2
-        with:
-          host: ${{ secrets.HOST }}
-          user: ${{ secrets.SSH_USER }}
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Pull & Reload
-        run: |
-            DOCKER_TAG=dev \
-            docker compose \
-            -p samowarium-dev \
-            up -d \
-            --pull always \
-            || exit 1
-
-      - name: Remove configuration files
-        run: |
-            rm ./.env
-
-  deploy-to-prod:
-    needs: [build-and-push-image, deploy-to-dev]
-    if: |
-      always() &&
-      needs.build-and-push-image.result == 'success' &&
-      ( needs.deploy-to-dev.result == 'success' ||
-        needs.deploy-to-dev.result == 'skipped' )
-    runs-on: ubuntu-latest
-    environment: prod
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Prepare configuration
-        run: |
-          mv .env.prod .env;
-          echo ENV=PROD >> .env;
-          echo ENABLE_PROMETHEUS_METRICS_SERVER=1 >> .env;
-          echo VERSION=v${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
-
-          echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
-          echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
-
-          echo POSTGRES_DB='${{ vars.POSTGRES_DB }}' >> .env;
-          echo POSTGRES_USER='${{ vars.POSTGRES_USER }}' >> .env;
-          echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
-          echo POSTGRES_HOST='${{ vars.POSTGRES_HOST }}' >> .env;
-
-      - name: Enable DEBUG logs
-        if: ${{ inputs.prod-debug-logs }}
-        run: |
-          echo DEBUG= >> .env;
-
-      - name: Enable DEBUG IP check
-        if: ${{ inputs.prod-ip-check }}
-        run: |
-          echo IP_CHECK= >> .env;
-
-      - name: Configure Docker Host
-        uses: khaledez/configure-docker-host@v2
-        with:
-          host: ${{ secrets.HOST }}
-          user: ${{ secrets.SSH_USER }}
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Pull & Reload
-        run: |
-            DOCKER_TAG=latest \
-            docker compose \
-            -p samowarium-prod \
-            up -d \
-            --pull always \
-            || exit 1
-
-      - name: Prune images
-        run: |
-            docker image prune -f
-
-      - name: Remove configuration files
-        run: |
-            rm ./.env
+  deploy:
+    needs: build-and-push
+    secrets: inherit
+    uses: ./.github/workflows/deploy.yml
+    with:
+      tag: latest
+      environment: prod

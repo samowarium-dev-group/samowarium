@@ -1,0 +1,66 @@
+name: Deploy job
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Prepare configuration
+        run: |
+          mv '${{ secrets.ENV_TEMPLATE_NAME }}' .env;
+          echo ENV=PROD >> .env;
+          echo ENABLE_PROMETHEUS_METRICS_SERVER=1 >> .env;
+          echo VERSION=v${{github.run_number}}-$(git rev-parse --short HEAD) >> .env;
+
+          echo TELEGRAM_TOKEN='${{ secrets.TG_TOKEN }}' >> .env;
+          echo ENCRYPTION='${{ secrets.ENCRYPTION }}' >> .env;
+
+          echo POSTGRES_DB='${{ secrets.POSTGRES_DB }}' >> .env;
+          echo POSTGRES_USER='${{ secrets.POSTGRES_USER }}' >> .env;
+          echo POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' >> .env;
+          echo POSTGRES_HOST='${{ secrets.POSTGRES_HOST }}' >> .env;
+
+      - name: Configure Docker Host
+        uses: khaledez/configure-docker-host@8179fd475444d23d71159ee73c40a103dc5beaaa
+        with:
+          host: ${{ secrets.HOST }}
+          user: ${{ secrets.SSH_USER }}
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Enable DEBUG logs
+        if: ${{ vars.IS_DEBUG_ENABLED }}
+        run: |
+            echo DEBUG=1 >> .env;
+
+      - name: Pull & Reload
+        run: |
+            DOCKER_TAG='${{ inputs.tag }}' \
+            docker compose \
+            -p samowarium-prod \
+            up -d \
+            --pull always \
+            || exit 1
+
+      - name: Prune images
+        run: |
+            docker image prune -f
+
+      - name: Remove configuration files
+        run: |
+            rm ./.env
