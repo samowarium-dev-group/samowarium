@@ -10,6 +10,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy to ${{ inputs.environment }} stand
@@ -42,7 +45,7 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Enable DEBUG logs
-        if: ${{ vars.IS_DEBUG_ENABLED }}
+        if: ${{ vars.IS_DEBUG_ENABLED }} == 'true'
         run: |
             echo DEBUG=1 >> .env;
 
@@ -50,8 +53,8 @@ jobs:
         run: |
             DOCKER_TAG='${{ inputs.tag }}' \
             docker compose \
-            -p samowarium-prod \
-            up -d \
+            -p samowarium-${{ inputs.environment }} \
+            up -d --quiet-pull \
             --pull always \
             || exit 1
 

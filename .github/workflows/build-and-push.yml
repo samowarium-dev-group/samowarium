@@ -7,6 +7,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push-image:
     name: Build and push image tag ${{ inputs.tag }}
@@ -21,14 +24,12 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # - name: Cache image
-    #   uses: satackey/action-docker-layer-caching@v0.0.11
-    #   continue-on-error: true
-
     - name: Build and push image
       uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25
       with:
         context: .
         push: true
         tags: |
-          ${{ inputs.tag }}
+          vzalygin/samowarium:${{ inputs.tag }}
+        cache-from: type=registry,ref=vzalygin/samowarium:${{ inputs.tag }}
+        cache-to: type=inline

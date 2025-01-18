@@ -8,13 +8,14 @@ on:
 jobs:
   build-and-push:
     uses: ./.github/workflows/build-and-push.yml
+    secrets: inherit
     with:
       tag: dev
 
   deploy:
     needs: build-and-push
-    secrets: inherit
     uses: ./.github/workflows/deploy.yml
+    secrets: inherit
     with:
       tag: dev
       environment: dev

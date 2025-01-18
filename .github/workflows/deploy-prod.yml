@@ -15,13 +15,14 @@ jobs:
   build-and-push:
     if: ${{ inputs.production-check }}
     uses: ./.github/workflows/build-and-push.yml
+    secrets: inherit
     with:
       tag: latest
 
   deploy:
     needs: build-and-push
-    secrets: inherit
     uses: ./.github/workflows/deploy.yml
+    secrets: inherit
     with:
       tag: latest
       environment: prod
